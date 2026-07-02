@@ -1,3 +1,5 @@
+### VPC and Subnet ###
+
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -18,6 +20,9 @@ resource "aws_subnet" "public" {
     Name = "${var.project_name}-public-subnet"
   }
 }
+
+### Internet Gateway and Route Table ###
+
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -43,6 +48,9 @@ resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 }
+
+### Security Group ###
+
 resource "aws_security_group" "web" {
   name        = "${var.project_name}-sg"
   description = "Allow SSH and HTTP"
@@ -69,6 +77,9 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+### EC2 Instance ###
+
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -89,6 +100,9 @@ resource "aws_instance" "web" {
     Name = "${var.project_name}-instance"
   }
 }
+
+### S3 Bucket ###
+
 resource "random_id" "suffix" {
   byte_length = 4
 }
@@ -100,14 +114,20 @@ resource "aws_s3_bucket" "data" {
     Name = "${var.project_name}-bucket"
   }
 }
-resource "random_id" "suffix" {
-  byte_length = 4
-}
 
-resource "aws_s3_bucket" "data" {
-  bucket = "${var.project_name}-data-${random_id.suffix.hex}"
+### DynamoDB Table ###
+
+resource "aws_dynamodb_table" "app_table" {
+  name         = "${var.project_name}-table"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
 
   tags = {
-    Name = "${var.project_name}-bucket"
+    Name = "${var.project_name}-table"
   }
 }
